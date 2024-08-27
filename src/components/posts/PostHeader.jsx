@@ -6,14 +6,40 @@ import TimeIcon from "../../assets/icons/time.svg";
 import { useState } from "react";
 import { useAvatar } from "../../hooks/useAvatar";
 import { usePost } from "../../hooks/usePost";
+import { useAuth } from "../../hooks/useAuth";
+import useAxios from "../../hooks/useAxios";
+import { actions } from "../../actions";
 
 
 const PostHeader = ({ post,onEdit}) => {
   const [showAction, setShowAction] = useState();
   const{state,dispatch}=usePost()
-  
+  const{api}=useAxios()
+const {auth}=useAuth()
+  const isMe=post?.author?.id ===auth?.user?.id
   const { avatarURL } = useAvatar(post);
   
+  const handleDelete=async()=>{
+    dispatch({
+      type:actions.post.DATA_FETCHING
+    })
+    try{
+    const response=await api.delete(`${import.meta.env.VITE_SERVER_BASE_URL}/posts/${post.id}`)
+    if(response.status===200){
+      dispatch({
+        type:actions.post.POST_DELETED,
+        data:post.id
+      })
+    }
+    }
+    catch(error){
+      console.error(error)
+      dispatch({
+        type: actions.post.DATA_FETCHED_ERROR,
+        error:error.message,
+    });
+    }
+  }
   
   return (
     
@@ -36,13 +62,15 @@ const PostHeader = ({ post,onEdit}) => {
       </div>
 
       <div className="relative">
-        <button>
+        {
+          isMe && <button>
           <img
             src={ThreeDotsIcon}
             alt="3dots of Action"
             onClick={() => setShowAction(!showAction)}
           />
         </button>
+        }
 
         {showAction && (
           <div className="action-modal-container">
@@ -50,7 +78,7 @@ const PostHeader = ({ post,onEdit}) => {
               <img src={EditIcon} alt="Edit" />
               Edit
             </button>
-            <button className="action-menu-item hover:text-red-500">
+            <button className="action-menu-item hover:text-red-500" onClick={handleDelete}>
               <img src={DeleteIcon} alt="Delete" />
               Delete
             </button>
